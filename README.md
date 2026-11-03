@@ -1,6 +1,7 @@
 # MLC LLM: Local Build and Inference on a Consumer GPU
 
 **Author:** Jesica Bermudes, B.S. Computer Science, University of Central Florida
+
 **Date:** November 2, 2026
 
 ## Overview
@@ -272,6 +273,7 @@ Three prompts were evaluated: a short explanation, a code-generation task, and a
 Prompt 1 appears in the model loading screenshot above.
 
 ![Prompt 2: prime function](images/2-prompt-prime.png)
+
 ![Prompt 3: bit-flip faults](images/3-prompt-bitflip.png)
 
 ### 4.3 Throughput
@@ -306,11 +308,31 @@ The observed increase of about 6.3 GB closely matches MLC's estimate, and `nvidi
 
 ---
 
-## 5. Summary
+## 5. Summary and Reflections
 
-- The officially documented prebuilt MLC LLM package is currently unusable on Windows because of a version mismatch between the published MLC LLM and TVM nightly binaries (mlc-ai/mlc-llm#3528, #3508). Dependency pinning did not resolve it.
-- Building TVM and MLC LLM together from source under WSL2 resolved the issue. Two additional build incompatibilities with the newest toolchain were resolved along the way: renamed TVM build options and a Thrust API removed in CUDA 13.3.
-- Llama 3.2 1B Instruct (4-bit) was compiled for and executed on an RTX 4060 Ti at **219.5 tokens/s decode**, using about **6.3 GB of GPU memory**, most of which is KV cache for the default 131K-token context.
+### Summary
+
+- The documented prebuilt package is currently broken on Windows due to a version mismatch between the published MLC LLM and TVM binaries ([mlc-ai/mlc-llm#3528](https://github.com/mlc-ai/mlc-llm/issues/3528), #3508). Dependency pinning did not fix it.
+- Building TVM and MLC LLM together from source under WSL2 resolved the issue, after working around two incompatibilities with the newest toolchain: renamed TVM build options and a Thrust API removed in CUDA 13.3.
+- Llama 3.2 1B Instruct (4-bit) ran on an RTX 4060 Ti at **219.5 tokens/s decode**, using about **6.3 GB of GPU memory**.
+
+### What I Learned
+
+This was my first time running an LLM locally, and the most valuable part turned out to be everything that went wrong before it worked.
+
+**Reading the stack, not just the error.** At first, the prebuilt failure looked like an MLC LLM problem. Following the traceback showed it actually failed inside TVM, which changed the fix entirely: rebuilding MLC LLM alone would not have helped. It also made the architecture click for me. MLC LLM is a layer on top of a compiler (TVM), which generates the GPU code each model actually runs.
+
+**Versions have to agree all the way down.** Several problems came from layers that each worked on their own but didn't match each other: the MLC and TVM binaries, the CUDA toolkit versus what my driver supports, and a library API that changed between CUDA releases. Building from source made each layer visible, which made each mismatch fixable.
+
+**Memory goes somewhere unexpected.** I assumed model weights would take most of the GPU memory. They took about 10%. The KV cache, sized for a 131K-token context, took about two-thirds. For embedded systems, where memory is the tightest constraint, this suggests the context window matters as much as model size when deciding what can run on a device.
+
+**Fluent is not the same as correct.** The model's explanation of bit-flip faults was reasonable, but its "fault-tolerant" example code had nothing to do with fault tolerance, and it presented both with the same confidence. That made the reliability side of this research feel concrete: when an LLM's output is wrong, nothing in the output itself signals it.
+
+### Questions I'd Like to Explore
+
+- How do throughput and memory change as the context window is reduced, and where is the practical minimum for useful output on a constrained device?
+- How do larger models (e.g. 8B) and other quantization levels trade off speed, memory, and output quality on the same 8 GB GPU?
+- What happens to the output if bits are deliberately flipped in the model's weights or KV cache? Which parts of the model are most sensitive, and could errors be detected before they reach the output?
 
 ---
 
