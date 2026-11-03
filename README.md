@@ -53,7 +53,7 @@ The officially documented prebuilt package fails to import on Windows due to a v
 | TVM (`3rdparty/tvm`, mlc-ai fork) | `629cc658` |
 | TVM core (`3rdparty/tvm/3rdparty/tvm-tirx`) | `198a0457` (2026-10-20) |
 
-![Source revisions and verification](images/7-build-versions.png)
+![Source revisions and verification](images/6-build-versions.png)
 
 ---
 
@@ -257,7 +257,7 @@ mlc_llm chat HF://mlc-ai/Llama-3.2-1B-Instruct-q4f16_1-MLC --device cuda
 
 On first run, MLC LLM downloaded the weights and JIT-compiled a CUDA model library (`compile.py: Generated .../lib.so`) using the source-built TVM, confirming the full compilation pipeline works end to end.
 
-![Model compilation and loading](images/1-model-load.png)
+![Model compilation, loading, and first prompt](images/1-model-load.png)
 
 ### 4.2 Execution
 
@@ -269,9 +269,10 @@ Three prompts were evaluated: a short explanation, a code-generation task, and a
 | "Write a Python function that checks if a number is prime." | Correct `is_prime` implementation using trial division up to √n, with docstring and usage examples |
 | "What is a bit-flip fault in computer memory, and how could it affect a neural network?" | Accurate high-level explanation (data corruption, system instability) and mitigations (error-correcting codes, redundancy, fault-tolerant design). The accompanying example code was generic training code unrelated to fault tolerance, which reflects the limited reasoning capacity of a 1B-parameter model. |
 
-![Prompt 1: compiler](images/2-prompt-compiler.png)
-![Prompt 2: prime function](images/3-prompt-prime.png)
-![Prompt 3: bit-flip faults](images/4-prompt-bitflip.png)
+Prompt 1 appears in the model loading screenshot above.
+
+![Prompt 2: prime function](images/2-prompt-prime.png)
+![Prompt 3: bit-flip faults](images/3-prompt-bitflip.png)
 
 ### 4.3 Throughput
 
@@ -284,7 +285,7 @@ Reported by `/stats` after the third prompt:
 
 Because the prompt was short, the prefill figure is based on very few tokens and is less representative of prefill performance than the decode figure.
 
-![Throughput statistics](images/5-stats.png)
+![Throughput statistics](images/4-stats.png)
 
 ### 4.4 GPU Memory
 
@@ -299,7 +300,7 @@ Because the prompt was short, the prefill figure is based on very few tokens and
 
 The observed increase of about 6.3 GB closely matches MLC's estimate, and `nvidia-smi` shows `python3.13` running as a compute (`C`) process on the GPU.
 
-![GPU memory usage during inference](images/6-nvidia-smi.png)
+![GPU memory usage during inference](images/5-nvidia-smi.png)
 
 **Observation.** The model weights account for only about 10% of the memory footprint. The KV cache accounts for about 66%, because MLC reserves cache space for the model's full 131,072-token context window. For memory-constrained or embedded deployment, reducing `context_window_size` (e.g. `--overrides "context_window_size=4096"`) would therefore be the most effective way to shrink the footprint, much more than further weight quantization.
 
