@@ -16,7 +16,7 @@ The officially documented prebuilt package fails to import on Windows due to a v
 2. [Prebuilt Package Evaluation](#2-prebuilt-package-evaluation)
 3. [Building from Source](#3-building-from-source)
 4. [Results](#4-results)
-5. [Summary](#5-summary)
+5. [Summary and Reflections](#5-summary-and-reflections)
 6. [References](#6-references)
 
 ---
